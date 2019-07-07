@@ -89,27 +89,69 @@ class AVL:
                 for i in self.right.keysInOrder():
                     yield i
 
+        def precursor(self):
+            if self.left:
+                node = self.left
+                while node.right:
+                    node = node.right
+                return node
+            node = self
+            while node.parent and node.parent.left == node:
+                node = node.parent
+            return node.parent
+
+        def successor(self):
+            if self.right:
+                node = self.right
+                while node.left:
+                    node = node.left
+                return node
+            node = self
+            while node.parent and node.parent.right == node:
+                node = node.parent
+            return node.parent
+
     def insert(self, key, val):
-        if self.root:
-            cur = self.root
-            while cur:
-                if key < cur.key:
-                    if cur.left:
-                        cur = cur.left
-                    else:
-                        cur.left = AVL.Node(key, val, cur)
-                        self.__update(cur)
-                        cur = None
-                elif key > cur.key:
-                    if cur.right:
-                        cur = cur.right
-                    else:
-                        cur.right = AVL.Node(key, val, cur)
-                        self.__update(cur)
-                        cur = None
+        self.root = self.__insertInternal(self.root, key, val)
+
+    def __insertInternal(self, node, key, val):
+        if node:
+            if key == node.key:
+                node.val = val
+            else:
+                if key < node.key:
+                    node.left = self.__insertInternal(node.left, key, val)
+                    node.left.parent = node
                 else:
-                    cur.val = val
-                    cur = None
+                    node.right = self.__insertInternal(node.right, key, val)
+                    node.right.parent = node
+                if node.updateHeight():
+                    node = node.balance()
+        else:
+            node = AVL.Node(key, val)
+        return node
+
+    def insert_bak(self, key, val):
+        if self.root:
+            node = self.root
+            while node:
+                if key < node.key:
+                    if node.left:
+                        node = node.left
+                    else:
+                        node.left = AVL.Node(key, val, node)
+                        self.__update(node)
+                        node = None
+                elif key > node.key:
+                    if node.right:
+                        node = node.right
+                    else:
+                        node.right = AVL.Node(key, val, node)
+                        self.__update(node)
+                        node = None
+                else:
+                    node.val = val
+                    node = None
         else:
             self.root = AVL.Node(key, val)
 
@@ -141,6 +183,22 @@ class AVL:
         if self.root:
             yield from self.root.keysInOrder()
 
+    def lastNode(self):
+        node = self.root
+        if not node:
+            return None
+        while node.right:
+            node = node.right
+        return node
+
+    def firstNode(self):
+        if not self.root:
+            return None
+        node = self.root
+        while node.left:
+            node = node.left
+        return node
+
 def main():
     test()
 
@@ -154,10 +212,22 @@ def test():
         for i in sample:
             tree.insert(i, 0)
         sample.sort()
-        keys = list(tree.keysInOrder())
-        if sample != keys:
+        keys1 = list(tree.keysInOrder())
+        keys2 = []
+        keys3 = []
+        node = tree.lastNode()
+        while node:
+            keys2.append(node.key)
+            node = node.precursor()
+        node = tree.firstNode()
+        while node:
+            keys3.append(node.key)
+            node = node.successor()
+        if not sample == keys1 == keys2[::-1] == keys3:
             print(sample)
-            print(keys)
+            print(keys1)
+            print(keys2[::-1])
+            print(keys3)
             print('Error')
             break
         print()
